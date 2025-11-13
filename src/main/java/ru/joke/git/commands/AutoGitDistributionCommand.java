@@ -3,19 +3,17 @@ package ru.joke.git.commands;
 import org.eclipse.jgit.api.CheckoutResult;
 import org.eclipse.jgit.api.CherryPickResult;
 import org.eclipse.jgit.api.PullResult;
-import org.eclipse.jgit.transport.PushResult;
+import org.eclipse.jgit.lib.AnyObjectId;
+import org.eclipse.jgit.lib.Ref;
 import ru.joke.classpath.ClassPathIndexed;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @ClassPathIndexed("distribute")
 public final class AutoGitDistributionCommand implements AutoGitCommand<Map<String, AutoGitDistributionCommand.BranchPublicationResult>, AutoGitDistributionCommand, AutoGitDistributionCommand.DistributionCommandBuilder> {
 
-    private static final String DEFAULT_ADD_FILES_PATTERN = ".";
-    private static final String OUTPUT_INFO_TEMPLATE = "%s:%s";
+    private static final String INITIAL_BRANCH = "$initial";
 
     private final List<String> branches;
     private final AutoGitCheckoutCommand checkout;
@@ -29,10 +27,7 @@ public final class AutoGitDistributionCommand implements AutoGitCommand<Map<Stri
         final var checkoutCommand = AutoGitCheckoutCommand.builder().build();
         final var pullCommand = AutoGitPullCommand.builder().build();
         final var pushCommand = AutoGitPushCommand.builder().build();
-        final var addCommand =
-                AutoGitAddCommand.builder()
-                                    .withFilesPattern(DEFAULT_ADD_FILES_PATTERN)
-                                 .build();
+        final var addCommand = AutoGitAddCommand.builder().build();
         this(
                 null,
                 checkoutCommand,
@@ -72,8 +67,8 @@ public final class AutoGitDistributionCommand implements AutoGitCommand<Map<Stri
 
         final var pullCommand = buildPullCommand();
         final var cherryPickCommand =
-                this.add != null && this.commit != null
-                        ? createInitialPublication(pullCommand)
+                this.commit != null
+                        ? createInitialPublication(pullCommand, result)
                         : this.cherryPick;
 
         final var checkoutCommandBuilder = this.checkout.toBuilder();
@@ -89,9 +84,19 @@ public final class AutoGitDistributionCommand implements AutoGitCommand<Map<Stri
             }
 
             try {
-                executeActionInBranch(branch, cherryPickCommand, pullCommand, branchPublicationResult);
+                executeActionInBranch(
+                        branch,
+                        cherryPickCommand,
+                        pullCommand,
+                        branchPublicationResult
+                );
             } catch (RuntimeException ex) {
-                executeActionInBranch(branch, cherryPickCommand, pullCommand, branchPublicationResult);
+                executeActionInBranch(
+                        branch,
+                        cherryPickCommand,
+                        pullCommand,
+                        branchPublicationResult
+                );
             }
         }
 
@@ -140,7 +145,10 @@ public final class AutoGitDistributionCommand implements AutoGitCommand<Map<Stri
         return pullCommandBuilder.build();
     }
 
-    private AutoGitCherryPickCommand createInitialPublication(final AutoGitPullCommand pullCommand) {
+    private AutoGitCherryPickCommand createInitialPublication(
+            final AutoGitPullCommand pullCommand,
+            final Map<String, BranchPublicationResult> result
+    ) {
         final AutoGitPublishCommand publishCommand =
                 AutoGitPublishCommand.builder()
                             .withAdd(this.add)
@@ -149,15 +157,18 @@ public final class AutoGitDistributionCommand implements AutoGitCommand<Map<Stri
                             .withPull(pullCommand)
                         .build();
 
-        final var commitInfo = publishCommand.call();
-        return this.cherryPick == null
-                ? AutoGitCherryPickCommand
-                    .builder()
-                        .withCommitHash(commitInfo.getId().getName())
-                    .build()
-                : this.cherryPick.toBuilder()
-                        .withCommitHash(commitInfo.getId().getName())
-                    .build();
+        final var commitId = publishCommand.call();
+        final var branchPublicationResult = result.computeIfAbsent(INITIAL_BRANCH, k -> new BranchPublicationResult());
+        branchPublicationResult.pushedCommits = Set.of(commitId);
+
+        final var cherryPickCommandBuilder =
+                this.cherryPick == null
+                        ? AutoGitCherryPickCommand.builder()
+                        : this.cherryPick.toBuilder();
+        return cherryPickCommandBuilder
+                    .withCommitHash(commitId)
+                    .withNoCommit(false)
+                .build();
     }
 
     private void executeActionInBranch(
@@ -179,7 +190,14 @@ public final class AutoGitDistributionCommand implements AutoGitCommand<Map<Stri
             return;
         }
 
-        branchPublicationResult.pushResults = this.push.call();
+        this.push.call();
+
+        branchPublicationResult.pushedCommits =
+                cherryPickResult.getCherryPickedRefs()
+                        .stream()
+                        .map(Ref::getObjectId)
+                        .map(AnyObjectId::getName)
+                        .collect(Collectors.toSet());
     }
 
     public static AutoGitDistributionCommand.DistributionCommandBuilder builder() {
@@ -190,7 +208,7 @@ public final class AutoGitDistributionCommand implements AutoGitCommand<Map<Stri
         private CheckoutResult failedCheckout;
         private CherryPickResult failedCherryPick;
         private PullResult failedPull;
-        private Iterable<PushResult> pushResults;
+        private Set<String> pushedCommits;
     }
 
     public static final class DistributionCommandBuilder implements Builder<AutoGitDistributionCommand.DistributionCommandBuilder, Map<String, BranchPublicationResult>, AutoGitDistributionCommand> {
@@ -200,9 +218,7 @@ public final class AutoGitDistributionCommand implements AutoGitCommand<Map<Stri
         private AutoGitPullCommand pull = AutoGitPullCommand.builder().build();
         private AutoGitCherryPickCommand cherryPick;
         private AutoGitPushCommand push = AutoGitPushCommand.builder().build();
-        private AutoGitAddCommand add = AutoGitAddCommand.builder()
-                                                             .withFilesPattern(DEFAULT_ADD_FILES_PATTERN)
-                                                         .build();
+        private AutoGitAddCommand add = AutoGitAddCommand.builder().build();
         private AutoGitCommitCommand commit;
 
         public DistributionCommandBuilder withCheckout(final AutoGitCheckoutCommand checkout) {

@@ -1,10 +1,9 @@
 package ru.joke.git.commands;
 
-import org.eclipse.jgit.revwalk.RevCommit;
 import ru.joke.classpath.ClassPathIndexed;
 
 @ClassPathIndexed("publish")
-public final class AutoGitPublishCommand implements AutoGitCommand<RevCommit, AutoGitPublishCommand, AutoGitPublishCommand.PublishCommandBuilder> {
+public final class AutoGitPublishCommand implements AutoGitCommand<String, AutoGitPublishCommand, AutoGitPublishCommand.PublishCommandBuilder> {
 
     private final AutoGitPullCommand pull;
     private final AutoGitAddCommand add;
@@ -36,7 +35,7 @@ public final class AutoGitPublishCommand implements AutoGitCommand<RevCommit, Au
     }
 
     @Override
-    public RevCommit call() {
+    public String call() {
 
         if (this.commit == null) {
             throw new IllegalStateException("Commit config is required for publish command");
@@ -48,10 +47,10 @@ public final class AutoGitPublishCommand implements AutoGitCommand<RevCommit, Au
             throw new RuntimeException("Failed to add changes");
         }
 
-        final var commitResult = this.commit.call();
+        final var commitId = this.commit.call();
         this.push.call();
 
-        return commitResult;
+        return commitId;
     }
 
     private void tryPullIfPossible() {
@@ -88,7 +87,7 @@ public final class AutoGitPublishCommand implements AutoGitCommand<RevCommit, Au
         return new PublishCommandBuilder();
     }
 
-    public static final class PublishCommandBuilder implements Builder<AutoGitPublishCommand.PublishCommandBuilder, RevCommit, AutoGitPublishCommand> {
+    public static final class PublishCommandBuilder implements Builder<AutoGitPublishCommand.PublishCommandBuilder, String, AutoGitPublishCommand> {
 
         private AutoGitPullCommand pull = AutoGitPullCommand.builder().build();
         private AutoGitAddCommand add = AutoGitAddCommand.builder().build();

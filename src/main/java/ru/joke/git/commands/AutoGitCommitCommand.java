@@ -2,12 +2,11 @@ package ru.joke.git.commands;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.CommitConfig;
-import org.eclipse.jgit.revwalk.RevCommit;
 import ru.joke.classpath.ClassPathIndexed;
 import ru.joke.git.shared.GitStorage;
 
 @ClassPathIndexed("commit")
-public final class AutoGitCommitCommand implements AutoGitCommand<RevCommit, AutoGitCommitCommand, AutoGitCommitCommand.CommitCommandBuilder> {
+public final class AutoGitCommitCommand implements AutoGitCommand<String, AutoGitCommitCommand, AutoGitCommitCommand.CommitCommandBuilder> {
 
     private final boolean all;
     private final boolean amend;
@@ -64,7 +63,7 @@ public final class AutoGitCommitCommand implements AutoGitCommand<RevCommit, Aut
     }
 
     @Override
-    public RevCommit call() {
+    public String call() {
         if (this.message == null || this.message.isBlank()) {
             throw new IllegalStateException("Message is required for commit command");
         }
@@ -92,7 +91,9 @@ public final class AutoGitCommitCommand implements AutoGitCommand<RevCommit, Aut
                     .setNoVerify(this.noVerify)
                     .setSign(this.sign)
                     .setSigningKey(this.signingKey)
-                    .call();
+                    .call()
+                    .getId()
+                    .getName();
         } catch (GitAPIException e) {
             throw new RuntimeException(e);
         }
@@ -137,7 +138,7 @@ public final class AutoGitCommitCommand implements AutoGitCommand<RevCommit, Aut
 
     public record Person(String name, String email) {}
 
-    public static final class CommitCommandBuilder implements Builder<AutoGitCommitCommand.CommitCommandBuilder, RevCommit, AutoGitCommitCommand> {
+    public static final class CommitCommandBuilder implements Builder<AutoGitCommitCommand.CommitCommandBuilder, String, AutoGitCommitCommand> {
 
         private boolean all;
         private boolean amend;

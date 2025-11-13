@@ -1,12 +1,17 @@
 package ru.joke.git.commands;
 
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.IndexDiff;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.revwalk.RevWalk;
+import org.eclipse.jgit.treewalk.FileTreeIterator;
 import ru.joke.classpath.ClassPathIndexed;
 import ru.joke.git.shared.GitStorage;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.io.IOException;
+import java.util.*;
 
 @ClassPathIndexed("add")
 public final class AutoGitAddCommand implements AutoGitCommand<Boolean, AutoGitAddCommand, AutoGitAddCommand.AddCommandBuilder> {
@@ -42,7 +47,14 @@ public final class AutoGitAddCommand implements AutoGitCommand<Boolean, AutoGitA
         }
 
         try {
-            final var addCommand = GitStorage.getGit().add();
+            final var git = GitStorage.getGit();
+
+            final var addCommand = git.add();
+
+            if (this.all) {
+                findAllChangesFiles(git.getRepository()).forEach(addCommand::addFilepattern);
+            }
+
             if (this.files != null) {
                 this.files.forEach(addCommand::addFilepattern);
             }
@@ -53,7 +65,7 @@ public final class AutoGitAddCommand implements AutoGitCommand<Boolean, AutoGitA
                     .call();
 
             return true;
-        } catch (GitAPIException e) {
+        } catch (GitAPIException | IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -73,6 +85,28 @@ public final class AutoGitAddCommand implements AutoGitCommand<Boolean, AutoGitA
                 + ", update=" + update
                 + ", files=" + files
                 + '}';
+    }
+
+    private Set<String> findAllChangesFiles(final Repository repo) throws IOException {
+        ObjectId head;
+        try (final var rw = new RevWalk(repo)) {
+            final var headRef = repo.exactRef(Constants.HEAD);
+            head = headRef == null ? null : headRef.getObjectId();
+        }
+
+        final var fileTreeIt = new FileTreeIterator(repo);
+        final var diff = new IndexDiff(repo, head == null ? "" : head.name(), fileTreeIt);
+        diff.diff();
+
+        final Set<String> result = new HashSet<>();
+        result.addAll(diff.getUntracked());
+        result.addAll(diff.getAdded());
+        result.addAll(diff.getChanged());
+        result.addAll(diff.getModified());
+        result.addAll(diff.getRemoved());
+        result.addAll(diff.getMissing());
+
+        return result;
     }
 
     public static AddCommandBuilder builder() {

@@ -6,6 +6,7 @@ import ru.joke.git.commands.AutoGitCommandFactory;
 import ru.joke.git.shared.GitStorage;
 import ru.joke.git.shared.JsonService;
 import ru.joke.git.shared.ProgressMonitorStorage;
+import ru.joke.git.shared.WindowCacheConfigurer;
 import ru.joke.git.shared.auth.GlobalCredentialsInitializer;
 import ru.joke.git.shared.auth.SshdSessionFactoryInitializer;
 
@@ -23,14 +24,14 @@ import static java.lang.IO.readln;
 
 abstract class AutoGitStarter {
 
-    private static final String COMMAND_DELIMITER = "\\|";
+    private static final String COMMAND_DELIMITER = "\\|\\|";
     private static final String EXIT_COMMAND = "exit";
 
     private static final String AWAIT_NEXT_COMMAND_INFO = "Ready to next commands...";
     private static final String STARTED_INFO = "Started, ready to execute commands";
     private static final String STOPPED_INFO = "Successfully stopped";
 
-    private static final String PK_FILE_PATH_PARAM = "pk.path";
+    private static final String PK_FILE_PATH_PARAM = "pk.file.path";
     private static final String USE_LEGACY_KEX_ALGORITHMS_PARAM = "use.legacy.kex";
     private static final String PASSPHRASE_PARAM = "passphrase";
 
@@ -42,7 +43,7 @@ abstract class AutoGitStarter {
     private static final JsonService jsonService = new JsonService();
     private static final AutoGitCommandFactory commandFactory = new AutoGitCommandFactory(jsonService);
 
-    public static void main(String[] args) throws GeneralSecurityException, IOException {
+    static void main(String[] args) throws GeneralSecurityException, IOException {
 
         initializeSharedResources(args);
 
@@ -70,7 +71,7 @@ abstract class AutoGitStarter {
         println(AWAIT_NEXT_COMMAND_INFO);
     }
 
-    private static void executeCommand(final String commandStr) throws Exception {
+    private static void executeCommand(final String commandStr) {
         final var commands = commandStr.split(COMMAND_DELIMITER);
         for (var command : commands) {
             final var commandData = command.split("=", 2);
@@ -122,13 +123,11 @@ abstract class AutoGitStarter {
             Runtime.getRuntime().addShutdownHook(new Thread(git::close));
         }
 
-        System.setProperty(
-                "org.apache.sshd.kex.algorithms",
-                "diffie-hellman-group14-sha1,diffie-hellman-group1-sha1"
-        );
-
         final var stdOutWriter = new PrintWriter(System.out, true, StandardCharsets.UTF_8);
         final var progressMonitor = new TextProgressMonitor(stdOutWriter);
         ProgressMonitorStorage.setProgressMonitor(progressMonitor);
+
+        final var configurer = new WindowCacheConfigurer();
+        configurer.configure(argsMap);
     }
 }
