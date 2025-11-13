@@ -7,12 +7,33 @@ import ru.joke.git.shared.GitStorage;
 import ru.joke.git.shared.ProgressMonitorStorage;
 
 @ClassPathIndexed("push")
-public final class AutoGitPushCommand implements AutoGitCommand<Iterable<PushResult>> {
+public final class AutoGitPushCommand implements AutoGitCommand<Iterable<PushResult>, AutoGitPushCommand, AutoGitPushCommand.PushCommandBuilder> {
 
-    private boolean atomic;
-    private boolean dryRun;
-    private boolean force;
-    private String remote;
+    private final boolean atomic;
+    private final boolean dryRun;
+    private final boolean force;
+    private final String remote;
+
+    private AutoGitPushCommand() {
+        this(
+                false,
+                false,
+                false,
+                null
+        );
+    }
+
+    private AutoGitPushCommand(
+            final boolean atomic,
+            final boolean dryRun,
+            final boolean force,
+            final String remote
+    ) {
+        this.atomic = atomic;
+        this.dryRun = dryRun;
+        this.force = force;
+        this.remote = remote;
+    }
 
     @Override
     public Iterable<PushResult> call() {
@@ -32,35 +53,64 @@ public final class AutoGitPushCommand implements AutoGitCommand<Iterable<PushRes
         }
     }
 
-    public boolean atomic() {
-        return atomic;
+    @Override
+    public PushCommandBuilder toBuilder() {
+        return builder()
+                .withAtomic(this.atomic)
+                .withDryRun(this.dryRun)
+                .withForce(this.force)
+                .withRemote(this.remote);
     }
 
-    public void setAtomic(boolean atomic) {
-        this.atomic = atomic;
+    @Override
+    public String toString() {
+        return "push{"
+                + "atomic=" + atomic
+                + ", dryRun=" + dryRun
+                + ", force=" + force
+                + ", remote='" + remote + '\''
+                + '}';
     }
 
-    public boolean dryRun() {
-        return dryRun;
+    public static PushCommandBuilder builder() {
+        return new PushCommandBuilder();
     }
 
-    public void setDryRun(boolean dryRun) {
-        this.dryRun = dryRun;
-    }
+    public static final class PushCommandBuilder implements Builder<PushCommandBuilder, Iterable<PushResult>, AutoGitPushCommand> {
 
-    public boolean force() {
-        return force;
-    }
+        private boolean atomic;
+        private boolean dryRun;
+        private boolean force;
+        private String remote;
 
-    public void setForce(boolean force) {
-        this.force = force;
-    }
+        public PushCommandBuilder withAtomic(final boolean atomic) {
+            this.atomic = atomic;
+            return this;
+        }
 
-    public String remote() {
-        return remote;
-    }
+        public PushCommandBuilder withDryRun(final boolean dryRun) {
+            this.dryRun = dryRun;
+            return this;
+        }
 
-    public void setRemote(String remote) {
-        this.remote = remote;
+        public PushCommandBuilder withForce(final boolean force) {
+            this.force = force;
+            return this;
+        }
+
+        public PushCommandBuilder withRemote(final String remote) {
+            this.remote = remote;
+            return this;
+        }
+
+        @Override
+        public AutoGitPushCommand build() {
+            return new AutoGitPushCommand(
+                    this.atomic,
+                    this.dryRun,
+                    this.force,
+                    this.remote
+            );
+        }
     }
 }

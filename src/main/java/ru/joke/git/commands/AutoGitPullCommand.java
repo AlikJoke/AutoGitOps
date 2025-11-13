@@ -11,15 +11,49 @@ import ru.joke.git.shared.GitStorage;
 import ru.joke.git.shared.ProgressMonitorStorage;
 
 @ClassPathIndexed("pull")
-public final class AutoGitPullCommand implements AutoGitCommand<PullResult> {
+public final class AutoGitPullCommand implements AutoGitCommand<PullResult, AutoGitPullCommand, AutoGitPullCommand.PullCommandBuilder> {
 
-    private boolean rebase;
-    private MergeCommand.FastForwardMode fastForwardMode = MergeCommand.FastForwardMode.FF;
-    private BranchConfig.BranchRebaseMode rebaseMode;
-    private String remote;
-    private String branch;
-    private SubmoduleConfig.FetchRecurseSubmodulesMode recurseSubmodulesMode;
-    private ContentMergeStrategy contentMergeStrategy = ContentMergeStrategy.CONFLICT;
+    private static final ContentMergeStrategy DEFAULT_CONTENT_MERGE_STRATEGY = ContentMergeStrategy.CONFLICT;
+    private static final MergeCommand.FastForwardMode DEFAULT_FAST_FORWARD_MODE = MergeCommand.FastForwardMode.FF;
+    private static final boolean DEFAULT_REBASE = true;
+
+    private final boolean rebase;
+    private final MergeCommand.FastForwardMode fastForwardMode;
+    private final BranchConfig.BranchRebaseMode rebaseMode;
+    private final String remote;
+    private final String branch;
+    private final SubmoduleConfig.FetchRecurseSubmodulesMode recurseSubmodulesMode;
+    private final ContentMergeStrategy contentMergeStrategy;
+
+    private AutoGitPullCommand() {
+        this(
+                DEFAULT_REBASE,
+                DEFAULT_FAST_FORWARD_MODE,
+                null,
+                null,
+                null,
+                null,
+                DEFAULT_CONTENT_MERGE_STRATEGY
+        );
+    }
+
+    private AutoGitPullCommand(
+            final boolean rebase,
+            final MergeCommand.FastForwardMode fastForwardMode,
+            final BranchConfig.BranchRebaseMode rebaseMode,
+            final String remote,
+            final String branch,
+            final SubmoduleConfig.FetchRecurseSubmodulesMode recurseSubmodulesMode,
+            final ContentMergeStrategy contentMergeStrategy
+    ) {
+        this.rebase = rebase;
+        this.fastForwardMode = fastForwardMode;
+        this.rebaseMode = rebaseMode;
+        this.remote = remote;
+        this.branch = branch;
+        this.recurseSubmodulesMode = recurseSubmodulesMode;
+        this.contentMergeStrategy = contentMergeStrategy;
+    }
 
     @Override
     public PullResult call() {
@@ -40,59 +74,91 @@ public final class AutoGitPullCommand implements AutoGitCommand<PullResult> {
         }
     }
 
-    public boolean rebase() {
-        return rebase;
+    @Override
+    public PullCommandBuilder toBuilder() {
+        return builder()
+                .withBranch(this.branch)
+                .withRebase(this.rebase)
+                .withRebaseMode(this.rebaseMode)
+                .withFastForwardMode(this.fastForwardMode)
+                .withRecurseSubmodulesMode(this.recurseSubmodulesMode)
+                .withContentMergeStrategy(this.contentMergeStrategy)
+                .withRemote(this.remote);
     }
 
-    public void setRebase(boolean rebase) {
-        this.rebase = rebase;
+    @Override
+    public String toString() {
+        return "pull{"
+                + "rebase=" + rebase
+                + ", fastForwardMode=" + fastForwardMode
+                + ", rebaseMode=" + rebaseMode
+                + ", remote='" + remote + '\''
+                + ", branch='" + branch + '\''
+                + ", recurseSubmodulesMode=" + recurseSubmodulesMode
+                + ", contentMergeStrategy=" + contentMergeStrategy
+                + '}';
     }
 
-    public MergeCommand.FastForwardMode fastForwardMode() {
-        return fastForwardMode;
+    public static PullCommandBuilder builder() {
+        return new PullCommandBuilder();
     }
 
-    public void setFastForwardMode(MergeCommand.FastForwardMode fastForwardMode) {
-        this.fastForwardMode = fastForwardMode;
-    }
+    public static final class PullCommandBuilder implements Builder<PullCommandBuilder, PullResult, AutoGitPullCommand> {
 
-    public BranchConfig.BranchRebaseMode rebaseMode() {
-        return rebaseMode;
-    }
+        private boolean rebase = DEFAULT_REBASE;
+        private MergeCommand.FastForwardMode fastForwardMode = DEFAULT_FAST_FORWARD_MODE;
+        private BranchConfig.BranchRebaseMode rebaseMode;
+        private String remote;
+        private String branch;
+        private SubmoduleConfig.FetchRecurseSubmodulesMode recurseSubmodulesMode;
+        private ContentMergeStrategy contentMergeStrategy = DEFAULT_CONTENT_MERGE_STRATEGY;
 
-    public void setRebaseMode(BranchConfig.BranchRebaseMode rebaseMode) {
-        this.rebaseMode = rebaseMode;
-    }
+        public PullCommandBuilder withRebase(final boolean rebase) {
+            this.rebase = rebase;
+            return this;
+        }
 
-    public String remote() {
-        return remote;
-    }
+        public PullCommandBuilder withFastForwardMode(final MergeCommand.FastForwardMode fastForwardMode) {
+            this.fastForwardMode = fastForwardMode;
+            return this;
+        }
 
-    public void setRemote(String remote) {
-        this.remote = remote;
-    }
+        public PullCommandBuilder withRebaseMode(final BranchConfig.BranchRebaseMode rebaseMode) {
+            this.rebaseMode = rebaseMode;
+            return this;
+        }
 
-    public String branch() {
-        return branch;
-    }
+        public PullCommandBuilder withRemote(final String remote) {
+            this.remote = remote;
+            return this;
+        }
 
-    public void setBranch(String branch) {
-        this.branch = branch;
-    }
+        public PullCommandBuilder withBranch(final String branch) {
+            this.branch = branch;
+            return this;
+        }
 
-    public SubmoduleConfig.FetchRecurseSubmodulesMode recurseSubmodulesMode() {
-        return recurseSubmodulesMode;
-    }
+        public PullCommandBuilder withRecurseSubmodulesMode(final SubmoduleConfig.FetchRecurseSubmodulesMode recurseSubmodulesMode) {
+            this.recurseSubmodulesMode = recurseSubmodulesMode;
+            return this;
+        }
 
-    public void setRecurseSubmodulesMode(SubmoduleConfig.FetchRecurseSubmodulesMode recurseSubmodulesMode) {
-        this.recurseSubmodulesMode = recurseSubmodulesMode;
-    }
+        public PullCommandBuilder withContentMergeStrategy(final ContentMergeStrategy contentMergeStrategy) {
+            this.contentMergeStrategy = contentMergeStrategy;
+            return this;
+        }
 
-    public ContentMergeStrategy contentMergeStrategy() {
-        return contentMergeStrategy;
-    }
-
-    public void setContentMergeStrategy(ContentMergeStrategy contentMergeStrategy) {
-        this.contentMergeStrategy = contentMergeStrategy;
+        @Override
+        public AutoGitPullCommand build() {
+            return new AutoGitPullCommand(
+                    this.rebase,
+                    this.fastForwardMode,
+                    this.rebaseMode,
+                    this.remote,
+                    this.branch,
+                    this.recurseSubmodulesMode,
+                    this.contentMergeStrategy
+            );
+        }
     }
 }

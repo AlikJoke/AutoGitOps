@@ -4,6 +4,7 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.TextProgressMonitor;
 import ru.joke.git.commands.AutoGitCommandFactory;
 import ru.joke.git.shared.GitStorage;
+import ru.joke.git.shared.JsonService;
 import ru.joke.git.shared.ProgressMonitorStorage;
 import ru.joke.git.shared.auth.GlobalCredentialsInitializer;
 import ru.joke.git.shared.auth.SshdSessionFactoryInitializer;
@@ -38,7 +39,8 @@ abstract class AutoGitStarter {
 
     private static final String REPOSITORY_PATH = "repo.path";
 
-    private static final AutoGitCommandFactory commandFactory = new AutoGitCommandFactory();
+    private static final JsonService jsonService = new JsonService();
+    private static final AutoGitCommandFactory commandFactory = new AutoGitCommandFactory(jsonService);
 
     public static void main(String[] args) throws GeneralSecurityException, IOException {
 
@@ -73,9 +75,13 @@ abstract class AutoGitStarter {
         for (var command : commands) {
             final var commandData = command.split("=", 2);
             println("Process command: " + command);
-            println("Output:");
+
             final var cmd = commandFactory.create(commandData[0], commandData[1]);
-            println(cmd.call());
+            final var cmdResult = cmd.call();
+            final var cmdResultAsJson = jsonService.serialize(cmdResult);
+
+            println("Output:");
+            println(cmdResultAsJson);
         }
     }
 

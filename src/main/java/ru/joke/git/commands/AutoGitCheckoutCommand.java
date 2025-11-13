@@ -9,19 +9,56 @@ import ru.joke.git.shared.GitStorage;
 import ru.joke.git.shared.ProgressMonitorStorage;
 
 @ClassPathIndexed("checkout")
-public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResult.Status> {
+public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResult, AutoGitCheckoutCommand, AutoGitCheckoutCommand.CheckoutCommandBuilder> {
 
-    private boolean forced;
-    private boolean createBranch;
-    private boolean orphan;
-    private boolean forceRefUpdate;
-    private String branch;
-    private CheckoutCommand.Stage stage;
-    private CreateBranchCommand.SetupUpstreamMode upstreamMode;
-    private String startPoint;
+    private final boolean forced;
+    private final boolean createBranch;
+    private final boolean orphan;
+    private final boolean forceRefUpdate;
+    private final String branch;
+    private final CheckoutCommand.Stage stage;
+    private final CreateBranchCommand.SetupUpstreamMode upstreamMode;
+    private final String startPoint;
+
+    private AutoGitCheckoutCommand() {
+        this(
+                false,
+                false,
+                false,
+                false,
+                null,
+                null,
+                null,
+                null
+        );
+    }
+
+    private AutoGitCheckoutCommand(
+            final boolean forced,
+            final boolean createBranch,
+            final boolean orphan,
+            final boolean forceRefUpdate,
+            final String branch,
+            final CheckoutCommand.Stage stage,
+            final CreateBranchCommand.SetupUpstreamMode upstreamMode,
+            final String startPoint
+    ) {
+        this.forced = forced;
+        this.createBranch = createBranch;
+        this.orphan = orphan;
+        this.forceRefUpdate = forceRefUpdate;
+        this.branch = branch;
+        this.stage = stage;
+        this.upstreamMode = upstreamMode;
+        this.startPoint = startPoint;
+    }
 
     @Override
-    public CheckoutResult.Status call() {
+    public CheckoutResult call() {
+        if (this.branch == null || this.branch.isBlank()) {
+            throw new IllegalStateException("Branch is required for checkout command");
+        }
+
         final var checkoutCommand = GitStorage.getGit().checkout();
         try {
             checkoutCommand
@@ -35,73 +72,106 @@ public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResu
                     .setUpstreamMode(this.upstreamMode)
                     .setStartPoint(this.startPoint)
                     .call();
-            return checkoutCommand.getResult().getStatus();
+            return checkoutCommand.getResult();
         } catch (GitAPIException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public boolean forced() {
-        return forced;
+    @Override
+    public CheckoutCommandBuilder toBuilder() {
+        return builder()
+                .withBranch(this.branch)
+                .withForced(this.forced)
+                .withOrphan(this.orphan)
+                .withStage(this.stage)
+                .withStartPoint(this.startPoint)
+                .withForceRefUpdate(this.forceRefUpdate)
+                .withCreateBranch(this.createBranch)
+                .withUpstreamMode(this.upstreamMode);
     }
 
-    public void setForced(boolean forced) {
-        this.forced = forced;
+    @Override
+    public String toString() {
+        return "checkout{"
+                + "forced=" + forced
+                + ", createBranch=" + createBranch
+                + ", orphan=" + orphan
+                + ", forceRefUpdate=" + forceRefUpdate
+                + ", branch='" + branch + '\''
+                + ", stage=" + stage
+                + ", upstreamMode=" + upstreamMode
+                + ", startPoint='" + startPoint + '\''
+                + '}';
     }
 
-    public boolean createBranch() {
-        return createBranch;
+    public static CheckoutCommandBuilder builder() {
+        return new CheckoutCommandBuilder();
     }
 
-    public void setCreateBranch(boolean createBranch) {
-        this.createBranch = createBranch;
-    }
+    public static final class CheckoutCommandBuilder implements Builder<CheckoutCommandBuilder, CheckoutResult, AutoGitCheckoutCommand> {
 
-    public boolean orphan() {
-        return orphan;
-    }
+        private boolean forced;
+        private boolean createBranch;
+        private boolean orphan;
+        private boolean forceRefUpdate;
+        private String branch;
+        private CheckoutCommand.Stage stage;
+        private CreateBranchCommand.SetupUpstreamMode upstreamMode;
+        private String startPoint;
 
-    public void setOrphan(boolean orphan) {
-        this.orphan = orphan;
-    }
+        public CheckoutCommandBuilder withForced(final boolean forced) {
+            this.forced = forced;
+            return this;
+        }
 
-    public boolean forceRefUpdate() {
-        return forceRefUpdate;
-    }
+        public CheckoutCommandBuilder withCreateBranch(final boolean createBranch) {
+            this.createBranch = createBranch;
+            return this;
+        }
 
-    public void setForceRefUpdate(boolean forceRefUpdate) {
-        this.forceRefUpdate = forceRefUpdate;
-    }
+        public CheckoutCommandBuilder withOrphan(final boolean orphan) {
+            this.orphan = orphan;
+            return this;
+        }
 
-    public String branch() {
-        return branch;
-    }
+        public CheckoutCommandBuilder withForceRefUpdate(final boolean forceRefUpdate) {
+            this.forceRefUpdate = forceRefUpdate;
+            return this;
+        }
 
-    public void setBranch(String branch) {
-        this.branch = branch;
-    }
+        public CheckoutCommandBuilder withBranch(final String branch) {
+            this.branch = branch;
+            return this;
+        }
 
-    public CheckoutCommand.Stage stage() {
-        return stage;
-    }
+        public CheckoutCommandBuilder withStage(final CheckoutCommand.Stage stage) {
+            this.stage = stage;
+            return this;
+        }
 
-    public void setStage(CheckoutCommand.Stage stage) {
-        this.stage = stage;
-    }
+        public CheckoutCommandBuilder withUpstreamMode(final CreateBranchCommand.SetupUpstreamMode upstreamMode) {
+            this.upstreamMode = upstreamMode;
+            return this;
+        }
 
-    public CreateBranchCommand.SetupUpstreamMode upstreamMode() {
-        return upstreamMode;
-    }
+        public CheckoutCommandBuilder withStartPoint(final String startPoint) {
+            this.startPoint = startPoint;
+            return this;
+        }
 
-    public void setUpstreamMode(CreateBranchCommand.SetupUpstreamMode upstreamMode) {
-        this.upstreamMode = upstreamMode;
-    }
-
-    public String startPoint() {
-        return startPoint;
-    }
-
-    public void setStartPoint(String startPoint) {
-        this.startPoint = startPoint;
+        @Override
+        public AutoGitCheckoutCommand build() {
+            return new AutoGitCheckoutCommand(
+                    this.forced,
+                    this.createBranch,
+                    this.orphan,
+                    this.forceRefUpdate,
+                    this.branch,
+                    this.stage,
+                    this.upstreamMode,
+                    this.startPoint
+            );
+        }
     }
 }
