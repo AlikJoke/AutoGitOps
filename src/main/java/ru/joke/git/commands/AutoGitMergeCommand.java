@@ -68,17 +68,18 @@ public final class AutoGitMergeCommand implements AutoGitCommand<MergeResult, Au
         if (this.message == null || this.message.isBlank()) {
             throw new IllegalStateException("Message is required for merge command");
         }
+        if (this.include == null || this.include.isEmpty()) {
+            throw new IllegalStateException("Refs is required for merge command");
+        }
 
         final var git = GitStorage.getGit();
         final var repo = git.getRepository();
         final var mergeCommand = git.merge();
 
         try {
-            if (this.include != null) {
-                for (final var includeToMerge : this.include) {
-                    final var ref = repo.resolve(includeToMerge);
-                    mergeCommand.include(ref);
-                }
+            for (final var includeToMerge : this.include) {
+                final var ref = repo.resolve(includeToMerge);
+                mergeCommand.include(ref);
             }
 
             return mergeCommand

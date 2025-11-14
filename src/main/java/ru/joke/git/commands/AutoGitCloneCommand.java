@@ -85,6 +85,10 @@ public final class AutoGitCloneCommand implements AutoGitCommand<String, AutoGit
 
     @Override
     public String call() {
+        if (this.repoUri == null || this.repoUri.isBlank()) {
+            throw new IllegalStateException("Repo uri is required for clone command");
+        }
+
         try {
             final var cloneCommand = Git.cloneRepository();
 

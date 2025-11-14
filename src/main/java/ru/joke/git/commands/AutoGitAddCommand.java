@@ -75,7 +75,7 @@ public final class AutoGitAddCommand implements AutoGitCommand<Boolean, AutoGitA
         return builder()
                 .withAll(this.all)
                 .withUpdate(this.update)
-                .withFilesPatterns(this.files);
+                .withFilesPatterns(this.files == null ? Collections.emptyList() : this.files);
     }
 
     @Override
