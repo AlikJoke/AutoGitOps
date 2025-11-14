@@ -6,6 +6,7 @@ import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.BranchConfig;
 import org.eclipse.jgit.lib.SubmoduleConfig;
 import org.eclipse.jgit.merge.ContentMergeStrategy;
+import org.eclipse.jgit.transport.TagOpt;
 import ru.joke.classpath.ClassPathIndexed;
 import ru.joke.git.shared.GitStorage;
 import ru.joke.git.shared.ProgressMonitorStorage;
@@ -24,6 +25,7 @@ public final class AutoGitPullCommand implements AutoGitCommand<PullResult, Auto
     private final String branch;
     private final SubmoduleConfig.FetchRecurseSubmodulesMode recurseSubmodulesMode;
     private final ContentMergeStrategy contentMergeStrategy;
+    private final TagOpt tagOpt;
 
     private AutoGitPullCommand() {
         this(
@@ -33,7 +35,8 @@ public final class AutoGitPullCommand implements AutoGitCommand<PullResult, Auto
                 null,
                 null,
                 null,
-                DEFAULT_CONTENT_MERGE_STRATEGY
+                DEFAULT_CONTENT_MERGE_STRATEGY,
+                null
         );
     }
 
@@ -44,7 +47,8 @@ public final class AutoGitPullCommand implements AutoGitCommand<PullResult, Auto
             final String remote,
             final String branch,
             final SubmoduleConfig.FetchRecurseSubmodulesMode recurseSubmodulesMode,
-            final ContentMergeStrategy contentMergeStrategy
+            final ContentMergeStrategy contentMergeStrategy,
+            final TagOpt tagOpt
     ) {
         this.rebase = rebase;
         this.fastForwardMode = fastForwardMode;
@@ -53,12 +57,17 @@ public final class AutoGitPullCommand implements AutoGitCommand<PullResult, Auto
         this.branch = branch;
         this.recurseSubmodulesMode = recurseSubmodulesMode;
         this.contentMergeStrategy = contentMergeStrategy;
+        this.tagOpt = tagOpt;
     }
 
     @Override
     public PullResult call() {
         try {
             final var pullCommand = GitStorage.getGit().pull();
+            if (this.tagOpt != null) {
+                pullCommand.setTagOpt(this.tagOpt);
+            }
+
             return pullCommand
                     .setRebase(this.rebase)
                     .setFastForward(this.fastForwardMode)
@@ -83,7 +92,8 @@ public final class AutoGitPullCommand implements AutoGitCommand<PullResult, Auto
                 .withFastForwardMode(this.fastForwardMode)
                 .withRecurseSubmodulesMode(this.recurseSubmodulesMode)
                 .withContentMergeStrategy(this.contentMergeStrategy)
-                .withRemote(this.remote);
+                .withRemote(this.remote)
+                .withTagOpt(this.tagOpt);
     }
 
     @Override
@@ -96,6 +106,7 @@ public final class AutoGitPullCommand implements AutoGitCommand<PullResult, Auto
                 + ", branch='" + branch + '\''
                 + ", recurseSubmodulesMode=" + recurseSubmodulesMode
                 + ", contentMergeStrategy=" + contentMergeStrategy
+                + ", tagOpt=" + tagOpt
                 + '}';
     }
 
@@ -112,6 +123,7 @@ public final class AutoGitPullCommand implements AutoGitCommand<PullResult, Auto
         private String branch;
         private SubmoduleConfig.FetchRecurseSubmodulesMode recurseSubmodulesMode;
         private ContentMergeStrategy contentMergeStrategy = DEFAULT_CONTENT_MERGE_STRATEGY;
+        private TagOpt tagOpt;
 
         public PullCommandBuilder withRebase(final boolean rebase) {
             this.rebase = rebase;
@@ -120,6 +132,11 @@ public final class AutoGitPullCommand implements AutoGitCommand<PullResult, Auto
 
         public PullCommandBuilder withFastForwardMode(final MergeCommand.FastForwardMode fastForwardMode) {
             this.fastForwardMode = fastForwardMode;
+            return this;
+        }
+
+        public PullCommandBuilder withTagOpt(final TagOpt tagOpt) {
+            this.tagOpt = tagOpt;
             return this;
         }
 
@@ -157,7 +174,8 @@ public final class AutoGitPullCommand implements AutoGitCommand<PullResult, Auto
                     this.remote,
                     this.branch,
                     this.recurseSubmodulesMode,
-                    this.contentMergeStrategy
+                    this.contentMergeStrategy,
+                    this.tagOpt
             );
         }
     }

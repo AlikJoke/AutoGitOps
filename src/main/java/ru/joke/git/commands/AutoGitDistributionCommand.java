@@ -134,6 +134,7 @@ public final class AutoGitDistributionCommand implements AutoGitCommand<Map<Stri
     ) {
         return builder
                     .withBranch(branch)
+                    .withForceRefUpdate(true)
                 .build();
     }
 

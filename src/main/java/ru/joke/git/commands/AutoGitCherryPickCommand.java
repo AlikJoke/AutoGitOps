@@ -2,10 +2,7 @@ package ru.joke.git.commands;
 
 import org.eclipse.jgit.api.CherryPickResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.merge.ContentMergeStrategy;
-import org.eclipse.jgit.merge.StrategyRecursive;
-import org.eclipse.jgit.merge.StrategyResolve;
 import org.eclipse.jgit.revwalk.RevCommit;
 import ru.joke.classpath.ClassPathIndexed;
 import ru.joke.git.shared.GitStorage;
@@ -60,7 +57,7 @@ public final class AutoGitCherryPickCommand implements AutoGitCommand<CherryPick
         }
 
         final var git = GitStorage.getGit();
-        final Repository repo = git.getRepository();
+        final var repo = git.getRepository();
         final var cherryPickCommand = git.cherryPick();
 
         try {
@@ -71,7 +68,7 @@ public final class AutoGitCherryPickCommand implements AutoGitCommand<CherryPick
 
             return cherryPickCommand
                     .setNoCommit(this.noCommit)
-                    .setStrategy(this.mergeStrategy.strategy)
+                    .setStrategy(this.mergeStrategy.getStrategy())
                     .setCherryPickCommitMessageProvider(RevCommit::getFullMessage)
                     .setProgressMonitor(ProgressMonitorStorage.getProgressMonitor())
                     .setContentMergeStrategy(this.contentMergeStrategy)
@@ -102,17 +99,6 @@ public final class AutoGitCherryPickCommand implements AutoGitCommand<CherryPick
 
     public static CherryPickCommandBuilder builder() {
         return new CherryPickCommandBuilder();
-    }
-
-    public enum MergeStrategy {
-        RESOLVE(new StrategyResolve()),
-        RECURSIVE(new StrategyRecursive());
-
-        private final org.eclipse.jgit.merge.MergeStrategy strategy;
-
-        MergeStrategy(final org.eclipse.jgit.merge.MergeStrategy strategy) {
-            this.strategy = strategy;
-        }
     }
 
     public static final class CherryPickCommandBuilder implements Builder<AutoGitCherryPickCommand.CherryPickCommandBuilder, CherryPickResult, AutoGitCherryPickCommand> {

@@ -14,12 +14,22 @@ public class AutoGitCommandFactory {
     private final Map<String, Class<AutoGitCommand<?, ?, ?>>> registry;
     private final JsonService jsonService;
 
-    public AutoGitCommandFactory(JsonService jsonService) {
+    public AutoGitCommandFactory(final JsonService jsonService) {
         this.jsonService = jsonService;
 
         final Map<String, Class<AutoGitCommand<?, ?, ?>>> commandsMap = new HashMap<>();
-        final var commandsRefs = ClassPathScanner.builder().begin().implementsInterface(AutoGitCommand.class).build().scan();
-        commandsRefs.stream().filter(command -> !command.aliases().isEmpty()).forEach(command -> command.aliases().forEach(commandAlias -> commandsMap.put(commandAlias, loadClass(command))));
+        final var commandsRefs =
+                ClassPathScanner.builder()
+                                    .begin()
+                                        .implementsInterface(AutoGitCommand.class)
+                                    .build()
+                                    .scan();
+        commandsRefs
+                .stream()
+                .filter(command -> !command.aliases().isEmpty())
+                .forEach(
+                        command -> command.aliases().forEach(commandAlias -> commandsMap.put(commandAlias, loadClass(command)))
+                );
 
         this.registry = Collections.unmodifiableMap(commandsMap);
     }
