@@ -15,14 +15,14 @@ public final class AutoGitGcCommand implements AutoGitCommand<Properties, AutoGi
     private static final boolean DEFAULT_AGGRESSIVE = true;
     private static final boolean DEFAULT_PRUNE_PRESERVED = true;
     private static final boolean DEFAULT_PACK_KEPT_OBJECTS = true;
-    private static final boolean DEFAULT_PRESERVE_OLD_PACKS = true;
+    private static final boolean DEFAULT_PRESERVE_OLD_PACKS = false;
     private static final long DEFAULT_EXPIRE_AFTER = 14;
     
     private final boolean aggressive;
     private final boolean prunePreserved;
     private final boolean packKeptObjects;
     private final boolean preserveOldPacks;
-    private final long expireAfter;
+    private final Long expireAfter;
 
     private AutoGitGcCommand() {
         this(
@@ -55,7 +55,7 @@ public final class AutoGitGcCommand implements AutoGitCommand<Properties, AutoGi
             final var git = GitStorage.getGit();
             final var gcCommand = git.gc();
 
-            if (this.expireAfter > 0) {
+            if (this.expireAfter != null) {
                 gcCommand.setExpire(Instant.now().minus(this.expireAfter, TimeUnit.DAYS.toChronoUnit()));
             }
 

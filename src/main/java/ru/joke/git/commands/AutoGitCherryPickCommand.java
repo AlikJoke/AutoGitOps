@@ -20,7 +20,7 @@ public final class AutoGitCherryPickCommand implements AutoGitCommand<CherryPick
     private static final ContentMergeStrategy DEFAULT_CONTENT_MERGE_STRATEGY = ContentMergeStrategy.CONFLICT;
     private static final MergeStrategy DEFAULT_MERGE_STRATEGY = MergeStrategy.RECURSIVE;
 
-    private final List<String> commitHashes;
+    private final List<String> refs;
     private final boolean noCommit;
     private final ContentMergeStrategy contentMergeStrategy;
     private final MergeStrategy mergeStrategy;
@@ -35,24 +35,24 @@ public final class AutoGitCherryPickCommand implements AutoGitCommand<CherryPick
     }
 
     private AutoGitCherryPickCommand(
-            final List<String> commitHashes,
+            final List<String> refs,
             final boolean noCommit,
             final ContentMergeStrategy contentMergeStrategy,
             final MergeStrategy mergeStrategy
     ) {
-        this.commitHashes = commitHashes;
+        this.refs = refs;
         this.noCommit = noCommit;
         this.contentMergeStrategy = contentMergeStrategy;
         this.mergeStrategy = mergeStrategy;
     }
 
-    public List<String> getCommitHashes() {
-        return Collections.unmodifiableList(this.commitHashes);
+    public List<String> getRefs() {
+        return Collections.unmodifiableList(this.refs);
     }
 
     @Override
     public CherryPickResult call() {
-        if (this.commitHashes == null || this.commitHashes.isEmpty()) {
+        if (this.refs == null || this.refs.isEmpty()) {
             throw new IllegalStateException("Commit hashes is required for cherry-pick command");
         }
 
@@ -61,9 +61,9 @@ public final class AutoGitCherryPickCommand implements AutoGitCommand<CherryPick
         final var cherryPickCommand = git.cherryPick();
 
         try {
-            for (final var hash : this.commitHashes) {
-                final var commitRef = repo.resolve(hash);
-                cherryPickCommand.include(commitRef);
+            for (final var ref : this.refs) {
+                final var objectId = repo.resolve(ref);
+                cherryPickCommand.include(objectId);
             }
 
             return cherryPickCommand
@@ -81,7 +81,7 @@ public final class AutoGitCherryPickCommand implements AutoGitCommand<CherryPick
     @Override
     public CherryPickCommandBuilder toBuilder() {
         return builder()
-                .withCommitHashes(this.commitHashes)
+                .withRefs(this.refs)
                 .withNoCommit(this.noCommit)
                 .withMergeStrategy(this.mergeStrategy)
                 .withContentMergeStrategy(this.contentMergeStrategy);
@@ -90,7 +90,7 @@ public final class AutoGitCherryPickCommand implements AutoGitCommand<CherryPick
     @Override
     public String toString() {
         return "cherry-pick{"
-                + "commitHashes=" + commitHashes
+                + "refs=" + refs
                 + ", noCommit=" + noCommit
                 + ", contentMergeStrategy=" + contentMergeStrategy
                 + ", mergeStrategy=" + mergeStrategy
@@ -103,18 +103,18 @@ public final class AutoGitCherryPickCommand implements AutoGitCommand<CherryPick
 
     public static final class CherryPickCommandBuilder implements Builder<AutoGitCherryPickCommand.CherryPickCommandBuilder, CherryPickResult, AutoGitCherryPickCommand> {
 
-        private final List<String> commitHashes = new ArrayList<>();
+        private final List<String> refs = new ArrayList<>();
         private boolean noCommit = DEFAULT_NO_COMMIT;
         private ContentMergeStrategy contentMergeStrategy = DEFAULT_CONTENT_MERGE_STRATEGY;
         private MergeStrategy mergeStrategy = DEFAULT_MERGE_STRATEGY;
 
-        public CherryPickCommandBuilder withCommitHashes(final List<String> commitHashes) {
-            this.commitHashes.addAll(commitHashes);
+        public CherryPickCommandBuilder withRefs(final List<String> refs) {
+            this.refs.addAll(refs);
             return this;
         }
 
         public CherryPickCommandBuilder withCommitHash(final String commitHash) {
-            this.commitHashes.add(commitHash);
+            this.refs.add(commitHash);
             return this;
         }
 
@@ -136,7 +136,7 @@ public final class AutoGitCherryPickCommand implements AutoGitCommand<CherryPick
         @Override
         public AutoGitCherryPickCommand build() {
             return new AutoGitCherryPickCommand(
-                    this.commitHashes,
+                    this.refs,
                     this.noCommit,
                     this.contentMergeStrategy,
                     this.mergeStrategy

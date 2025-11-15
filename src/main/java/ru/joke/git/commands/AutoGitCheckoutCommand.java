@@ -15,7 +15,7 @@ public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResu
     private final boolean createBranch;
     private final boolean orphan;
     private final boolean forceRefUpdate;
-    private final String branch;
+    private final String ref;
     private final CheckoutCommand.Stage stage;
     private final CreateBranchCommand.SetupUpstreamMode upstreamMode;
     private final String startPoint;
@@ -38,7 +38,7 @@ public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResu
             final boolean createBranch,
             final boolean orphan,
             final boolean forceRefUpdate,
-            final String branch,
+            final String ref,
             final CheckoutCommand.Stage stage,
             final CreateBranchCommand.SetupUpstreamMode upstreamMode,
             final String startPoint
@@ -47,7 +47,7 @@ public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResu
         this.createBranch = createBranch;
         this.orphan = orphan;
         this.forceRefUpdate = forceRefUpdate;
-        this.branch = branch;
+        this.ref = ref;
         this.stage = stage;
         this.upstreamMode = upstreamMode;
         this.startPoint = startPoint;
@@ -55,8 +55,8 @@ public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResu
 
     @Override
     public CheckoutResult call() {
-        if (this.branch == null || this.branch.isBlank()) {
-            throw new IllegalStateException("Branch is required for checkout command");
+        if (this.ref == null || this.ref.isBlank()) {
+            throw new IllegalStateException("Ref to checkout is required for checkout command");
         }
 
         final var checkoutCommand = GitStorage.getGit().checkout();
@@ -67,7 +67,7 @@ public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResu
                     .setOrphan(this.orphan)
                     .setForceRefUpdate(this.forceRefUpdate)
                     .setProgressMonitor(ProgressMonitorStorage.getProgressMonitor())
-                    .setName(this.branch)
+                    .setName(this.ref)
                     .setStage(this.stage)
                     .setUpstreamMode(this.upstreamMode)
                     .setStartPoint(this.startPoint)
@@ -81,7 +81,7 @@ public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResu
     @Override
     public CheckoutCommandBuilder toBuilder() {
         return builder()
-                .withBranch(this.branch)
+                .withRef(this.ref)
                 .withForced(this.forced)
                 .withOrphan(this.orphan)
                 .withStage(this.stage)
@@ -98,7 +98,7 @@ public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResu
                 + ", createBranch=" + createBranch
                 + ", orphan=" + orphan
                 + ", forceRefUpdate=" + forceRefUpdate
-                + ", branch='" + branch + '\''
+                + ", ref='" + ref + '\''
                 + ", stage=" + stage
                 + ", upstreamMode=" + upstreamMode
                 + ", startPoint='" + startPoint + '\''
@@ -115,7 +115,7 @@ public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResu
         private boolean createBranch;
         private boolean orphan;
         private boolean forceRefUpdate;
-        private String branch;
+        private String ref;
         private CheckoutCommand.Stage stage;
         private CreateBranchCommand.SetupUpstreamMode upstreamMode;
         private String startPoint;
@@ -140,8 +140,8 @@ public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResu
             return this;
         }
 
-        public CheckoutCommandBuilder withBranch(final String branch) {
-            this.branch = branch;
+        public CheckoutCommandBuilder withRef(final String ref) {
+            this.ref = ref;
             return this;
         }
 
@@ -167,7 +167,7 @@ public final class AutoGitCheckoutCommand implements AutoGitCommand<CheckoutResu
                     this.createBranch,
                     this.orphan,
                     this.forceRefUpdate,
-                    this.branch,
+                    this.ref,
                     this.stage,
                     this.upstreamMode,
                     this.startPoint

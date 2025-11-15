@@ -2,15 +2,16 @@ package ru.joke.git.commands;
 
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.eclipse.jgit.lib.Ref;
 import ru.joke.classpath.ClassPathIndexed;
 import ru.joke.git.shared.GitStorage;
 import ru.joke.git.shared.ProgressMonitorStorage;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @ClassPathIndexed("reset")
-public final class AutoGitResetCommand implements AutoGitCommand<Ref, AutoGitResetCommand, AutoGitResetCommand.ResetCommandBuilder> {
+public final class AutoGitResetCommand implements AutoGitCommand<String, AutoGitResetCommand, AutoGitResetCommand.ResetCommandBuilder> {
 
     private static final ResetCommand.ResetType DEFAULT_RESET_MODE = ResetCommand.ResetType.SOFT;
 
@@ -41,7 +42,7 @@ public final class AutoGitResetCommand implements AutoGitCommand<Ref, AutoGitRes
     }
 
     @Override
-    public Ref call() {        
+    public String call() {
         final var resetCommand = GitStorage.getGit().reset();
         try {
             if (this.files != null) {
@@ -53,7 +54,8 @@ public final class AutoGitResetCommand implements AutoGitCommand<Ref, AutoGitRes
                     .setMode(this.resetMode)
                     .setRef(this.ref)
                     .disableRefLog(this.disableRefLog)
-                    .call();
+                    .call()
+                    .getName();
         } catch (GitAPIException e) {
             throw new RuntimeException(e);
         }
@@ -82,7 +84,7 @@ public final class AutoGitResetCommand implements AutoGitCommand<Ref, AutoGitRes
         return new ResetCommandBuilder();
     }
 
-    public static final class ResetCommandBuilder implements Builder<ResetCommandBuilder, Ref, AutoGitResetCommand> {
+    public static final class ResetCommandBuilder implements Builder<ResetCommandBuilder, String, AutoGitResetCommand> {
 
         private boolean disableRefLog;
         private String ref;

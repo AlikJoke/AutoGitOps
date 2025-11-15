@@ -59,7 +59,7 @@ public final class AutoGitDistributionCommand implements AutoGitCommand<Map<Stri
 
     @Override
     public Map<String, BranchPublicationResult> call() {
-        if ((this.cherryPick == null || this.cherryPick.getCommitHashes().isEmpty()) && this.commit == null) {
+        if ((this.cherryPick == null || this.cherryPick.getRefs().isEmpty()) && this.commit == null) {
             throw new IllegalStateException("Commit refs to distribution is required");
         }
 
@@ -133,7 +133,7 @@ public final class AutoGitDistributionCommand implements AutoGitCommand<Map<Stri
             final AutoGitCheckoutCommand.CheckoutCommandBuilder builder
     ) {
         return builder
-                    .withBranch(branch)
+                    .withRef(branch)
                     .withForceRefUpdate(true)
                 .build();
     }

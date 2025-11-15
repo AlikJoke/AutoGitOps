@@ -6,7 +6,7 @@ import ru.joke.git.shared.GitStorage;
 import ru.joke.git.shared.ProgressMonitorStorage;
 
 @ClassPathIndexed("pack-refs")
-public final class AutoGitPackRefsCommand implements AutoGitCommand<String, AutoGitPackRefsCommand, AutoGitPackRefsCommand.PackRefsCommand> {
+public final class AutoGitPackRefsCommand implements AutoGitCommand<String, AutoGitPackRefsCommand, AutoGitPackRefsCommand.PackRefsCommandBuilder> {
 
     private static final boolean DEFAULT_ALL = true;
 
@@ -24,9 +24,9 @@ public final class AutoGitPackRefsCommand implements AutoGitCommand<String, Auto
     public String call() {
         try {
             final var git = GitStorage.getGit();
-            final var packRefsCommand = git.packRefs();
+            final var PackRefsCommandBuilder = git.packRefs();
 
-            return packRefsCommand
+            return PackRefsCommandBuilder
                     .setAll(this.all)
                     .setProgressMonitor(ProgressMonitorStorage.getProgressMonitor())
                     .call();
@@ -36,7 +36,7 @@ public final class AutoGitPackRefsCommand implements AutoGitCommand<String, Auto
     }
 
     @Override
-    public PackRefsCommand toBuilder() {
+    public PackRefsCommandBuilder toBuilder() {
         return builder()
                 .withAll(this.all);
     }
@@ -48,15 +48,15 @@ public final class AutoGitPackRefsCommand implements AutoGitCommand<String, Auto
                 + '}';
     }
 
-    public static PackRefsCommand builder() {
-        return new PackRefsCommand();
+    public static PackRefsCommandBuilder builder() {
+        return new PackRefsCommandBuilder();
     }
 
-    public static final class PackRefsCommand implements Builder<PackRefsCommand, String, AutoGitPackRefsCommand> {
+    public static final class PackRefsCommandBuilder implements Builder<PackRefsCommandBuilder, String, AutoGitPackRefsCommand> {
 
         private boolean all = DEFAULT_ALL;
 
-        public PackRefsCommand withAll(final boolean all) {
+        public PackRefsCommandBuilder withAll(final boolean all) {
             this.all = all;
             return this;
         }

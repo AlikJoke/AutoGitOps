@@ -6,7 +6,7 @@ import ru.joke.git.shared.GitStorage;
 import java.util.Properties;
 
 @ClassPathIndexed("optimize")
-public final class AutoGitOptimizeCommand implements AutoGitCommand<AutoGitOptimizeCommand.OptimizationResult, AutoGitOptimizeCommand, AutoGitOptimizeCommand.OptimizeCommand> {
+public final class AutoGitOptimizeCommand implements AutoGitCommand<AutoGitOptimizeCommand.OptimizationResult, AutoGitOptimizeCommand, AutoGitOptimizeCommand.OptimizeCommandBuilder> {
 
     private final AutoGitPackRefsCommand packRefs;
     private final AutoGitGcCommand gc;
@@ -43,7 +43,7 @@ public final class AutoGitOptimizeCommand implements AutoGitCommand<AutoGitOptim
     }
 
     @Override
-    public OptimizeCommand toBuilder() {
+    public OptimizeCommandBuilder toBuilder() {
         return builder()
                 .withGc(this.gc)
                 .withPackRefs(this.packRefs);
@@ -57,8 +57,8 @@ public final class AutoGitOptimizeCommand implements AutoGitCommand<AutoGitOptim
                 + '}';
     }
 
-    public static OptimizeCommand builder() {
-        return new OptimizeCommand();
+    public static OptimizeCommandBuilder builder() {
+        return new OptimizeCommandBuilder();
     }
 
     public record OptimizationResult(
@@ -66,17 +66,17 @@ public final class AutoGitOptimizeCommand implements AutoGitCommand<AutoGitOptim
             Properties gcResult
     ) {}
 
-    public static final class OptimizeCommand implements Builder<OptimizeCommand, OptimizationResult, AutoGitOptimizeCommand> {
+    public static final class OptimizeCommandBuilder implements Builder<OptimizeCommandBuilder, OptimizationResult, AutoGitOptimizeCommand> {
 
         private AutoGitPackRefsCommand packRefs = AutoGitPackRefsCommand.builder().build();
         private AutoGitGcCommand gc = AutoGitGcCommand.builder().build();
 
-        public OptimizeCommand withPackRefs(final AutoGitPackRefsCommand packRefs) {
+        public OptimizeCommandBuilder withPackRefs(final AutoGitPackRefsCommand packRefs) {
             this.packRefs = packRefs;
             return this;
         }
 
-        public OptimizeCommand withGc(final AutoGitGcCommand gc) {
+        public OptimizeCommandBuilder withGc(final AutoGitGcCommand gc) {
             this.gc = gc;
             return this;
         }
