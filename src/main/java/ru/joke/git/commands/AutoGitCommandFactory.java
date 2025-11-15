@@ -5,11 +5,12 @@ import ru.joke.classpath.ClassResource;
 import ru.joke.classpath.scanner.ClassPathScanner;
 import ru.joke.git.shared.JsonService;
 
+import java.lang.reflect.InvocationTargetException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-public class AutoGitCommandFactory {
+public final class AutoGitCommandFactory {
 
     private final Map<String, Class<AutoGitCommand<?, ?, ?>>> registry;
     private final JsonService jsonService;
@@ -35,11 +36,24 @@ public class AutoGitCommandFactory {
     }
 
     public <R, C extends AutoGitCommand<R, C, B>, B extends AutoGitCommand.Builder<B, R, C>> AutoGitCommand<R, C, B> create(final String commandAlias, final String paramsJson) {
-        final var commandClass = registry.get(commandAlias);
+        final var commandClass = this.registry.get(commandAlias);
         @SuppressWarnings("unchecked")
-        final var result = (AutoGitCommand<R, C, B>) this.jsonService.deserialize(paramsJson, commandClass);
+        final var result = (AutoGitCommand<R, C, B>)
+                (paramsJson == null
+                        ? createUnconfiguredCommand(commandClass)
+                        : this.jsonService.deserialize(paramsJson, commandClass));
 
         return result;
+    }
+
+    private AutoGitCommand<?, ?, ?> createUnconfiguredCommand(final Class<AutoGitCommand<?, ?, ?>> commandType) {
+        try {
+            final var defaultConstructor = commandType.getDeclaredConstructor();
+            defaultConstructor.setAccessible(true);
+            return defaultConstructor.newInstance();
+        } catch (NoSuchMethodException | InstantiationException | IllegalAccessException | InvocationTargetException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private static Class<AutoGitCommand<?, ?, ?>> loadClass(final ClassPathResource resource) {

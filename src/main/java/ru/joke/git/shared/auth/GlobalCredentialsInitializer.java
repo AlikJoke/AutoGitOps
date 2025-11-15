@@ -7,9 +7,13 @@ public final class GlobalCredentialsInitializer {
 
     public void initialize(
             final String username,
-            final String password
+            final char[] password
     ) {
-        final CredentialsProvider provider = new UsernamePasswordCredentialsProvider(username, password);
+        if (password.length == 0) {
+            throw new IllegalArgumentException("Non-empty password is required");
+        }
+
+        final var provider = new UsernamePasswordCredentialsProvider(username, password);
         CredentialsProvider.setDefault(provider);
     }
 }

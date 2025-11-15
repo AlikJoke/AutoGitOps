@@ -25,7 +25,7 @@ import java.security.PublicKey;
 import java.util.Collections;
 import java.util.List;
 
-public class SshdSessionFactoryInitializer {
+public final class SshdSessionFactoryInitializer {
 
     public void initialize(
             final String privateKeyFilePath,
@@ -54,15 +54,20 @@ public class SshdSessionFactoryInitializer {
 
             @Override
             protected JSch getJSch(OpenSshConfig.Host hc, FS fs) throws JSchException {
-                JSch jsch = super.getJSch(hc, fs);
+                final var jsch = super.getJSch(hc, fs);
 
                 if (passPhrase == null || passPhrase.isEmpty()) {
                     jsch.addIdentity(privateKeyPath.toString());
                 } else {
                     try {
-                        byte[] prv = Files.readAllBytes(privateKeyPath);
-                        byte[] pass = passPhrase.getBytes(StandardCharsets.UTF_8);
-                        jsch.addIdentity("key-from-openssh", prv, null, pass);
+                        final var privateKeyBytes = Files.readAllBytes(privateKeyPath);
+                        final var passPhraseBytes = passPhrase.getBytes(StandardCharsets.UTF_8);
+                        jsch.addIdentity(
+                                "key-from-openssh",
+                                privateKeyBytes,
+                                null,
+                                passPhraseBytes
+                        );
                     } catch (IOException e) {
                         throw new JSchException("Unable to read private key", e);
                     }
